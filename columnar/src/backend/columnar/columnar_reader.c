@@ -1195,31 +1195,24 @@ FreeChunkData(ChunkData *chunkData)
 	pfree(chunkData);
 }
 
-#if PG_VERSION_NUM >= PG_VERSION_16
-/* Copied from postgres 15 source, since it was removed from 16. */
-static bool
-MemoryContextContains(MemoryContext context, void *pointer)
+#if PG_VERSION_NUM < PG_VERSION_16
+static inline bool
+CachedStringInfo(StringInfo *info)
 {
-        MemoryContext ptr_context;
+	return MemoryContextContains(ColumnarCacheMemoryContext(), (void *)info);
+}
+#else
+typedef struct cached_StringInfo
+{
+	StringInfoData data;
+	bool cached;
+} cached_StringInfo;
 
-        /*
-         * NB: Can't use GetMemoryChunkContext() here - that performs assertions
-         * that aren't acceptable here since we might be passed memory not
-         * allocated by any memory context.
-         *
-         * Try to detect bogus pointers handed to us, poorly though we can.
-         * Presumably, a pointer that isn't MAXALIGNED isn't pointing at an
-         * allocated chunk.
-         */
-        if (pointer == NULL || pointer != (void *) MAXALIGN(pointer))
-                return false;
-
-        /*
-         * OK, it's probably safe to look at the context.
-         */
-        ptr_context = *(MemoryContext *) (((char *) pointer) - sizeof(void *));
-
-        return ptr_context == context;
+static bool
+CachedStringInfo(StringInfo info)
+{
+	cached_StringInfo *cachedInfo = (cached_StringInfo *)info;
+	return cachedInfo->cached;
 }
 #endif
 
@@ -1235,7 +1228,7 @@ void FreeChunkBufferValueArray(ChunkData *chunkData)
 
 	for (columnIndex = 0; columnIndex < chunkData->columnCount; columnIndex++)
 	{
-		if (chunkData->valueBufferArray[columnIndex] != NULL && !MemoryContextContains(ColumnarCacheMemoryContext(), chunkData->valueBufferArray[columnIndex]))
+		if (chunkData->valueBufferArray[columnIndex] != NULL && !CachedStringInfo(chunkData->valueBufferArray[columnIndex]))
 		{
 			pfree(chunkData->valueBufferArray[columnIndex]->data);
 			pfree(chunkData->valueBufferArray[columnIndex]);
@@ -1939,9 +1932,15 @@ DeserializeChunkData(StripeBuffers *stripeBuffers, uint64 chunkIndex,
 				valueBuffer = DecompressBuffer(chunkBuffers->valueBuffer,
 								 chunkBuffers->valueCompressionType,
 								 chunkBuffers->decompressedValueSize);
-
+#if PG_VERSION_NUM >= PG_VERSION_16
+				valueBuffer = repalloc(valueBuffer, sizeof(cached_StringInfo));
+				((cached_StringInfo *)valueBuffer)->cached = false;
+#endif
 				if (shouldCache)
 				{
+#if PG_VERSION_NUM >= PG_VERSION_16
+				((cached_StringInfo *)valueBuffer)->cached = true;
+#endif
 					ColumnarAddCacheEntry(state->relation->rd_id, stripeId, chunkIndex, columnIndex, valueBuffer);
 					MemoryContextSwitchTo(oldMemoryContext);
 				}
