@@ -1202,17 +1202,10 @@ CachedStringInfo(StringInfo *info)
 	return MemoryContextContains(ColumnarCacheMemoryContext(), (void *)info);
 }
 #else
-typedef struct cached_StringInfo
-{
-	StringInfoData data;
-	bool cached;
-} cached_StringInfo;
-
-static bool
+static inline bool
 CachedStringInfo(StringInfo info)
 {
-	cached_StringInfo *cachedInfo = (cached_StringInfo *)info;
-	return cachedInfo->cached;
+	return ((cached_StringInfo *)info)->cached;
 }
 #endif
 
@@ -1932,15 +1925,19 @@ DeserializeChunkData(StripeBuffers *stripeBuffers, uint64 chunkIndex,
 				valueBuffer = DecompressBuffer(chunkBuffers->valueBuffer,
 								 chunkBuffers->valueCompressionType,
 								 chunkBuffers->decompressedValueSize);
+
 #if PG_VERSION_NUM >= PG_VERSION_16
 				valueBuffer = repalloc(valueBuffer, sizeof(cached_StringInfo));
 				((cached_StringInfo *)valueBuffer)->cached = false;
 #endif
+
 				if (shouldCache)
 				{
+
 #if PG_VERSION_NUM >= PG_VERSION_16
-				((cached_StringInfo *)valueBuffer)->cached = true;
+					((cached_StringInfo *)valueBuffer)->cached = true;
 #endif
+
 					ColumnarAddCacheEntry(state->relation->rd_id, stripeId, chunkIndex, columnIndex, valueBuffer);
 					MemoryContextSwitchTo(oldMemoryContext);
 				}
