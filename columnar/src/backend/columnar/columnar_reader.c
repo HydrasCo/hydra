@@ -1140,7 +1140,12 @@ CreateEmptyChunkData(uint32 columnCount, bool *columnMask, uint32 chunkGroupRowC
 	ChunkData *chunkData = palloc0(sizeof(ChunkData));
 	chunkData->existsArray = palloc0(columnCount * sizeof(bool *));
 	chunkData->valueArray = palloc0(columnCount * sizeof(Datum *));
+#if PG_VERSION_NUM >= PG_VERSION_16
+	/* 'cache' member will be 'false' because of 'palloc0' */
+	chunkData->valueBufferArray = palloc0(columnCount * sizeof(cached_StringInfo));
+#else
 	chunkData->valueBufferArray = palloc0(columnCount * sizeof(StringInfo));
+#endif
 	chunkData->columnCount = columnCount;
 	chunkData->rowCount = chunkGroupRowCount;
 
