@@ -1195,34 +1195,6 @@ FreeChunkData(ChunkData *chunkData)
 	pfree(chunkData);
 }
 
-#if PG_VERSION_NUM >= PG_VERSION_16
-/* Copied from postgres 15 source, since it was removed from 16. */
-static bool
-MemoryContextContains(MemoryContext context, void *pointer)
-{
-        MemoryContext ptr_context;
-
-        /*
-         * NB: Can't use GetMemoryChunkContext() here - that performs assertions
-         * that aren't acceptable here since we might be passed memory not
-         * allocated by any memory context.
-         *
-         * Try to detect bogus pointers handed to us, poorly though we can.
-         * Presumably, a pointer that isn't MAXALIGNED isn't pointing at an
-         * allocated chunk.
-         */
-        if (pointer == NULL || pointer != (void *) MAXALIGN(pointer))
-                return false;
-
-        /*
-         * OK, it's probably safe to look at the context.
-         */
-        ptr_context = *(MemoryContext *) (((char *) pointer) - sizeof(void *));
-
-        return ptr_context == context;
-}
-#endif
-
 /* FreeChunkValueArrayBuffer relase valueBufferArray memory. */
 void FreeChunkBufferValueArray(ChunkData *chunkData)
 {
@@ -1235,7 +1207,7 @@ void FreeChunkBufferValueArray(ChunkData *chunkData)
 
 	for (columnIndex = 0; columnIndex < chunkData->columnCount; columnIndex++)
 	{
-		if (chunkData->valueBufferArray[columnIndex] != NULL && !MemoryContextContains(ColumnarCacheMemoryContext(), chunkData->valueBufferArray[columnIndex]))
+		if (chunkData->valueBufferArray[columnIndex] != NULL)
 		{
 			pfree(chunkData->valueBufferArray[columnIndex]->data);
 			pfree(chunkData->valueBufferArray[columnIndex]);
