@@ -128,6 +128,14 @@ typedef struct StripeSkipList
 } StripeSkipList;
 
 
+#if PG_VERSION_NUM >= PG_VERSION_16
+typedef struct cached_StringInfo
+{
+	StringInfoData data;
+	bool cached;
+} cached_StringInfo;
+#endif
+
 /*
  * ChunkData represents a chunk of data for multiple columns. valueArray stores
  * the values of data, and existsArray stores whether a value is present.

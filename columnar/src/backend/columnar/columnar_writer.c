@@ -252,7 +252,14 @@ ColumnarWriteRow(ColumnarWriteState *writeState, Datum *columnValues, bool *colu
 		 */
 		for (columnIndex = 0; columnIndex < columnCount; columnIndex++)
 		{
+#if PG_VERSION_NUM >= PG_VERSION_16
+			cached_StringInfo *value = palloc(sizeof(cached_StringInfo));
+			initStringInfo(&value->data);
+			value->cached = false;
+			chunkData->valueBufferArray[columnIndex] = (StringInfo)value;
+#else
 			chunkData->valueBufferArray[columnIndex] = makeStringInfo();
+#endif
 		}
 	}
 
