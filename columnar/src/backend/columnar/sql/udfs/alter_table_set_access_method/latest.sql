@@ -155,13 +155,13 @@ BEGIN
 
             AND
 
-            quote_ident(indexname)::regclass::oid IN 
+            (quote_ident(schemaname)||'.'||quote_ident(indexname))::regclass::oid IN
                 ( 
                     SELECT indexrelid FROM pg_index 
 
                     WHERE
                         indexrelid IN 
-                            (SELECT quote_ident(indexname)::regclass::oid FROM pg_indexes
+                            (SELECT (quote_ident(schemaname)||'.'||quote_ident(indexname))::regclass::oid FROM pg_indexes
                                 WHERE schemaname = tbl_schema_original AND tablename = tbl_name_original)
 
                         AND
@@ -180,26 +180,26 @@ BEGIN
     -- Create new table
     
     EXECUTE FORMAT('
-        CREATE TABLE %s.%s (LIKE %s.%s 
+        CREATE TABLE %I.%I (LIKE %I.%I 
                          INCLUDING GENERATED
                          INCLUDING DEFAULTS
         ) USING %s'::text, tbl_schema, temp_tbl_name, tbl_schema, tbl_name, method);
 
     -- Insert all data from original table
 
-    EXECUTE FORMAT('INSERT INTO %s.%s SELECT * FROM %s.%s'::text, tbl_schema, temp_tbl_name, tbl_schema, tbl_name);
+    EXECUTE FORMAT('INSERT INTO %I.%I SELECT * FROM %I.%I'::text, tbl_schema, temp_tbl_name, tbl_schema, tbl_name);
 
     -- Drop original table
 
-    EXECUTE FORMAT('DROP TABLE %s.%s'::text, tbl_schema, tbl_name);
+    EXECUTE FORMAT('DROP TABLE %I.%I'::text, tbl_schema, tbl_name);
 
     -- Rename new table to original name
 
-    EXECUTE FORMAT('ALTER TABLE %s.%s RENAME TO %s;'::text, tbl_schema, temp_tbl_name, tbl_name);
+    EXECUTE FORMAT('ALTER TABLE %I.%I RENAME TO %s;'::text, tbl_schema, temp_tbl_name, tbl_name);
 
     -- Since we inserted rows before they are not flushed so trigger flushing
 
-    EXECUTE FORMAT('SELECT COUNT(1) FROM %s.%s LIMIT 1;'::text, tbl_schema, tbl_name);
+    EXECUTE FORMAT('SELECT COUNT(1) FROM %I.%I LIMIT 1;'::text, tbl_schema, tbl_name);
 
     -- Set indexes 
 
@@ -221,7 +221,7 @@ BEGIN
         LOOP
             SELECT string_to_array(constraint_name_and_definition, '?') INTO constraint_name_and_definition_split;
             BEGIN
-                EXECUTE 'ALTER TABLE ' || tbl_name || ' ADD CONSTRAINT ' 
+                EXECUTE 'ALTER TABLE ' || tbl_schema || '.' || tbl_name || ' ADD CONSTRAINT '
                             || constraint_name_and_definition_split[1] || ' '
                             || constraint_name_and_definition_split[2];
             EXCEPTION WHEN feature_not_supported THEN 
