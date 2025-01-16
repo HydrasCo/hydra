@@ -40,7 +40,7 @@ typedef struct ListCellAndListWrapper
 } ListCellAndListWrapper;
 
 /*
- * foreach_ptr -
+ * foreach_decl_ptr -
  *	  a convenience macro which loops through a pointer list without needing a
  *	  ListCell, just a declared pointer variable to store the pointer of the
  *	  cell in.
@@ -54,7 +54,7 @@ typedef struct ListCellAndListWrapper
  *	  - || true is used to always enter the loop when cell is not null even if
  *	    var is NULL.
  */
-#define foreach_ptr(var, l) \
+#define foreach_decl_ptr(var, l) \
 	for (ListCell *(var ## CellDoNotUse) = list_head(l); \
 		 (var ## CellDoNotUse) != NULL && \
 		 (((var) = lfirst(var ## CellDoNotUse)) || true); \
@@ -62,12 +62,12 @@ typedef struct ListCellAndListWrapper
 
 
 /*
- * foreach_int -
+ * foreach_decl_int -
  *	  a convenience macro which loops through an int list without needing a
  *	  ListCell, just a declared int variable to store the int of the cell in.
- *	  For explanation of how it works see foreach_ptr.
+ *	  For explanation of how it works see foreach_decl_ptr.
  */
-#define foreach_int(var, l) \
+#define foreach_decl_int(var, l) \
 	for (ListCell *(var ## CellDoNotUse) = list_head(l); \
 		 (var ## CellDoNotUse) != NULL && \
 		 (((var) = lfirst_int(var ## CellDoNotUse)) || true); \
@@ -75,12 +75,12 @@ typedef struct ListCellAndListWrapper
 
 
 /*
- * foreach_oid -
+ * foreach_decl_oid -
  *	  a convenience macro which loops through an oid list without needing a
  *	  ListCell, just a declared Oid variable to store the oid of the cell in.
- *	  For explanation of how it works see foreach_ptr.
+ *	  For explanation of how it works see foreach_decl_ptr.
  */
-#define foreach_oid(var, l) \
+#define foreach_decl_oid(var, l) \
 	for (ListCell *(var ## CellDoNotUse) = list_head(l); \
 		 (var ## CellDoNotUse) != NULL && \
 		 (((var) = lfirst_oid(var ## CellDoNotUse)) || true); \
@@ -140,7 +140,7 @@ typedef struct ListCellAndListWrapper
 		 )
 
 /*
- * foreach_ptr_append -
+ * foreach_decl_ptr_append -
  *	  a convenience macro which loops through a pointer List and can append list
  *	  elements without needing a ListCell or and index variable, just a declared
  *	  pointer variable to store the iterated values.
@@ -163,13 +163,13 @@ typedef struct ListCellAndListWrapper
  *	    declared there.
  *	  - || true is used to always enter the loop even if var is NULL.
  */
-#define foreach_ptr_append(var, l) \
+#define foreach_decl_ptr_append(var, l) \
 	for (int var ## PositionDoNotUse = 0; \
 		 (var ## PositionDoNotUse) < list_length(l) && \
 		 (((var) = list_nth(l, var ## PositionDoNotUse)) || true); \
 		 var ## PositionDoNotUse ++)
 #else
-#define foreach_ptr_append(var, l) foreach_ptr(var, l)
+#define foreach_decl_ptr_append(var, l) foreach_decl_ptr(var, l)
 #endif
 
 static inline List*
