@@ -61,4 +61,8 @@ extern void ColumnarStorageWrite(Relation rel, uint64 logicalOffset,
 								 char *data, uint32 amount);
 extern bool ColumnarStorageTruncate(Relation rel, uint64 newDataReservation);
 
+#if PG_VERSION_NUM < 140007
+inline SMgrRelation RelationGetSmgr(Relation rel);
+#endif
+
 #endif /* COLUMNAR_STORAGE_H */
