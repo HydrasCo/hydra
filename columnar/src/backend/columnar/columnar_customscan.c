@@ -407,7 +407,7 @@ ColumnarGetRelationInfoHook(PlannerInfo *root, Oid relationObjectId,
 
 		/* disable index-only scan */
 		IndexOptInfo *indexOptInfo = NULL;
-		foreach_ptr(indexOptInfo, rel->indexlist)
+		foreach_decl_ptr(indexOptInfo, rel->indexlist)
 		{
 			memset(indexOptInfo->canreturn, false, indexOptInfo->ncolumns * sizeof(bool));
 		}
@@ -426,7 +426,7 @@ RemovePathsByPredicate(RelOptInfo *rel, PathPredicate removePathPredicate)
 	List *filteredPartialPathList = NIL;
 
 	Path *path = NULL;
-	foreach_ptr(path, rel->pathlist)
+	foreach_decl_ptr(path, rel->pathlist)
 	{
 		if (!removePathPredicate(path))
 		{
@@ -436,7 +436,7 @@ RemovePathsByPredicate(RelOptInfo *rel, PathPredicate removePathPredicate)
 
 	rel->pathlist = filteredPathList;
 
-	foreach_ptr(path, rel->partial_pathlist)
+	foreach_decl_ptr(path, rel->partial_pathlist)
 	{
 		if (!removePathPredicate(path))
 		{
@@ -483,7 +483,7 @@ static void
 CostColumnarPaths(PlannerInfo *root, RelOptInfo *rel, Oid relationId)
 {
 	Path *path = NULL;
-	foreach_ptr(path, rel->pathlist)
+	foreach_decl_ptr(path, rel->pathlist)
 	{
 		if (IsA(path, IndexPath))
 		{
@@ -833,7 +833,7 @@ ExtractPushdownClause(PlannerInfo *root, RelOptInfo *rel, Node *node)
 		List *pushdownableArgs = NIL;
 
 		Node *boolExprArg = NULL;
-		foreach_ptr(boolExprArg, boolExpr->args)
+		foreach_decl_ptr(boolExprArg, boolExpr->args)
 		{
 			Expr *pushdownableArg = ExtractPushdownClause(root, rel,
 														  (Node *) boolExprArg);
@@ -1656,7 +1656,7 @@ ColumnarPerStripeScanCost(RelOptInfo *rel, Oid relationId, int numberOfColumnsRe
 	uint32 maxColumnCount = 0;
 	uint64 totalStripeSize = 0;
 	StripeMetadata *stripeMetadata = NULL;
-	foreach_ptr(stripeMetadata, stripeList)
+	foreach_decl_ptr(stripeMetadata, stripeList)
 	{
 		totalStripeSize += stripeMetadata->dataLength;
 		maxColumnCount = Max(maxColumnCount, stripeMetadata->columnCount);
@@ -2443,7 +2443,7 @@ ColumnarScanNext(ColumnarScanState *columnarScanState)
 	{
 		VectorTupleTableSlot *vectorSlot = (VectorTupleTableSlot *) slot;
 		int attrIndex = -1;
-		foreach_int(attrIndex, columnarScanState->vectorization.attrNeededList)
+		foreach_decl_int(attrIndex, columnarScanState->vectorization.attrNeededList)
 		{
 			VectorColumn *column = (VectorColumn *) vectorSlot->tts.tts_values[attrIndex];
 			memset(column->isnull, true, COLUMNAR_VECTOR_COLUMN_SIZE);

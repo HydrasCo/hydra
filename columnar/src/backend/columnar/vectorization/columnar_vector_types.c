@@ -94,7 +94,7 @@ ExtractTupleFromVectorSlot(TupleTableSlot *out, VectorTupleTableSlot *vectorSlot
 						   int32 index, List *attrNeededList)
 {
 	int attno;
-	foreach_int(attno, attrNeededList)
+	foreach_decl_int(attno, attrNeededList)
 	{
 		if (!out->tts_tupleDescriptor->attrs[attno].attisdropped)
 		{

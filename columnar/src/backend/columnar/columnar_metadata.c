@@ -2603,7 +2603,7 @@ GetHighestUsedRowNumber(uint64 storageId)
 													  GetTransactionSnapshot(),
 													  ForwardScanDirection);
 	StripeMetadata *stripeMetadata = NULL;
-	foreach_ptr(stripeMetadata, stripeMetadataList)
+	foreach_decl_ptr(stripeMetadata, stripeMetadataList)
 	{
 		highestRowNumber = Max(highestRowNumber,
 							   StripeGetHighestRowNumber(stripeMetadata));
