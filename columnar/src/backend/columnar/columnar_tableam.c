@@ -1285,16 +1285,7 @@ columnar_relation_nontransactional_truncate(Relation rel)
 
 	uint64 storageId = ColumnarMetadataNewStorageId();
 
-	if (unlikely(rel->rd_smgr == NULL))
-	{
-#if PG_VERSION_NUM >= PG_VERSION_16
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_locator, rel->rd_backend));
-#else
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_node, rel->rd_backend));
-#endif
-	}
-
-	ColumnarStorageInit(rel->rd_smgr, storageId);
+	ColumnarStorageInit(RelationGetSmgr(rel), storageId);
 }
 
 
@@ -1864,16 +1855,7 @@ LogRelationStats(Relation rel, int elevel)
 
 	MemoryContextSwitchTo(oldcontext);
 
-	if (unlikely(rel->rd_smgr == NULL))
-	{
-#if PG_VERSION_NUM >= PG_VERSION_16
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_locator, rel->rd_backend));
-#else
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_node, rel->rd_backend));
-#endif
-	}
-
-	uint64 relPages = smgrnblocks(rel->rd_smgr, MAIN_FORKNUM);
+	uint64 relPages = smgrnblocks(RelationGetSmgr(rel), MAIN_FORKNUM);
 	RelationCloseSmgr(rel);
 
 	Datum storageId = DirectFunctionCall1(columnar_relation_storageid,
@@ -1989,16 +1971,8 @@ TruncateColumnar(Relation rel, int elevel)
 		uint64 newDataReservation = Max(GetHighestUsedAddress(rel->rd_node) + 1,
 										ColumnarFirstLogicalOffset);
 #endif
-		if (unlikely(rel->rd_smgr == NULL))
-		{
-#if PG_VERSION_NUM >= PG_VERSION_16
-			smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_locator, rel->rd_backend));
-#else
-			smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_node, rel->rd_backend));
-#endif
-		}
 
-		BlockNumber old_rel_pages = smgrnblocks(rel->rd_smgr, MAIN_FORKNUM);
+		BlockNumber old_rel_pages = smgrnblocks(RelationGetSmgr(rel), MAIN_FORKNUM);
 
 		if (!ColumnarStorageTruncate(rel, newDataReservation))
 		{
@@ -2553,26 +2527,17 @@ columnar_relation_size(Relation rel, ForkNumber forkNumber)
 {
 	uint64 nblocks = 0;
 
-	if (unlikely(rel->rd_smgr == NULL))
-	{
-#if PG_VERSION_NUM >= PG_VERSION_16
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_locator, rel->rd_backend));
-#else
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_node, rel->rd_backend));
-#endif
-	}
-
 	/* InvalidForkNumber indicates returning the size for all forks */
 	if (forkNumber == InvalidForkNumber)
 	{
 		for (int i = 0; i < MAX_FORKNUM; i++)
 		{
-			nblocks += smgrnblocks(rel->rd_smgr, i);
+			nblocks += smgrnblocks(RelationGetSmgr(rel), i);
 		}
 	}
 	else
 	{
-		nblocks = smgrnblocks(rel->rd_smgr, forkNumber);
+		nblocks = smgrnblocks(RelationGetSmgr(rel), forkNumber);
 	}
 
 	return nblocks * BLCKSZ;
@@ -2591,16 +2556,7 @@ columnar_estimate_rel_size(Relation rel, int32 *attr_widths,
 						   BlockNumber *pages, double *tuples,
 						   double *allvisfrac)
 {
-	if (unlikely(rel->rd_smgr == NULL))
-	{
-#if PG_VERSION_NUM >= PG_VERSION_16
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_locator, rel->rd_backend));
-#else
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_node, rel->rd_backend));
-#endif
-	}
-
-	*pages = smgrnblocks(rel->rd_smgr, MAIN_FORKNUM);
+	*pages = smgrnblocks(RelationGetSmgr(rel), MAIN_FORKNUM);
 	*tuples = ColumnarTableRowCount(rel);
 
 	/*

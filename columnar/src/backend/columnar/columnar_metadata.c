@@ -2552,20 +2552,7 @@ ColumnarStorageUpdateIfNeeded(Relation rel, bool isUpgrade)
 		return;
 	}
 
-	/*
-	 * RelationGetSmgr was added in 15, but only backported to 13.10 and 14.07
-	 * leaving other versions requiring something like this.
-	 */
-	if (unlikely(rel->rd_smgr == NULL))
-	{
-	#if PG_VERSION_NUM >= PG_VERSION_16
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_locator, rel->rd_backend));
-	#else
-		smgrsetowner(&(rel->rd_smgr), smgropen(rel->rd_node, rel->rd_backend));
-	#endif
-	}
-
-	BlockNumber nblocks = smgrnblocks(rel->rd_smgr, MAIN_FORKNUM);
+	BlockNumber nblocks = smgrnblocks(RelationGetSmgr(rel), MAIN_FORKNUM);
 	if (nblocks < 2)
 	{
 		ColumnarStorageInit(rel->rd_smgr, ColumnarMetadataNewStorageId());
