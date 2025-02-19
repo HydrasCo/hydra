@@ -348,10 +348,16 @@ ColumnarAddCacheEntry(uint64 relId, uint64 stripeId, uint64 chunkId,
 		dlist_push_tail(head, &(entry->list_node));
 	}
 
-	uint64 size = ((StringInfo) data)->len;
+	// copy data
+	StringInfo source = (StringInfo) data;
+	StringInfo dest = makeStringInfo();
+	dest->cursor = source->cursor;
+	enlargeStringInfo(dest, source->len);
+	dest->len = source->len;
+	memcpy(dest->data, source->data, source->len);
 
-	entry->store = data;
-	entry->length = size;
+	entry->store = dest;
+	entry->length = dest->len;
 
 	totalAllocationLength += size;
 
